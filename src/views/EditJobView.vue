@@ -1,70 +1,99 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-    <link rel="stylesheet" href="css/styles.css" />
-    <link rel="icon" type="image/png" href="/favicon.ico" />
-    <title>Vue Jobs | Become a Vue Developer</title>
-  </head>
-  <body>
-    <nav class="bg-green-700 border-b border-green-500">
-      <div class="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
-        <div class="flex h-20 items-center justify-between">
-          <div
-            class="flex flex-1 items-center justify-center md:items-stretch md:justify-start"
-          >
-            <!-- Logo -->
-            <a class="flex flex-shrink-0 items-center mr-4" href="index.html">
-              <img class="h-10 w-auto" src="images/logo.png" alt="Vue Jobs" />
-              <span class="hidden md:block text-white text-2xl font-bold ml-2"
-                >Vue Jobs</span
-              >
-            </a>
-            <div class="md:ml-auto">
-              <div class="flex space-x-2">
-                <a
-                  href="index.html"
-                  class="text-white hover:bg-gray-900 hover:text-white rounded-md px-3 py-2"
-                  >Home</a
-                >
-                <a
-                  href="jobs.html"
-                  class="text-white hover:bg-gray-900 hover:text-white rounded-md px-3 py-2"
-                  >Jobs</a
-                >
-                <a
-                  href="add-job.html"
-                  class="text-white bg-green-900 hover:bg-gray-900 hover:text-white rounded-md px-3 py-2"
-                  >Add Job</a
-                >
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </nav>
+<script setup>
+    import { reactive, onMounted } from 'vue';
+    import axios from 'axios';
+    import { useToast } from 'vue-toastification';
+    import { useRoute, useRouter } from 'vue-router';
 
+    const route = useRoute();
+    const router = useRouter();
+    
+    const jobId= route.params.id;
+
+    const form = reactive({
+        type: 'Full-Time',
+        title: '',
+        description:'',
+        salary:'',
+        company: {
+            name: '',
+            description: '',
+            contactEmail: '',
+            contactPhone: ''
+        }
+    });
+
+    const state = reactive({
+        job: {},
+        isLoading: true
+    })
+
+    const toast = useToast();
+
+    const handleSubmit = async () => {
+        const updatedJob = {
+            title: form.title,
+            type: form.type,
+            description: form.description,
+            salary: form.salary,
+            company: {
+                name: form.company.name,
+                description: form.company.description,
+                contactEmail: form.company.contactEmail,
+                contactPhone: form.company.contactPhone
+            }
+        }
+        console.log(updatedJob)
+
+        try{
+            const response = await axios.put(`/api/jobs/${jobId}`, updatedJob);
+            //Toast
+            toast.success('Job Updated Successfully!');
+
+            router.push(`/jobs/${response.data.id}`)
+        }catch (err) {
+            console.log (err)
+            toast.error('Something went wrong. Please try again later.');
+        }
+    }
+
+    onMounted(async () => {
+        try {
+            const response = await axios.get(`/api/jobs/${jobId}`);
+            state.job = response.data;
+            //Populate form
+            form.type = state.job.type;
+            form.title = state.job.title;
+            form.description = state.job.description;
+            form.salary = state.job.salary;
+            form.location = state.job.location;
+            form.company.name = state.job.company.name;
+            form.company.contactEmail = state.job.company.contactEmail;
+            form.company.contactPhone = state.job.company.contactPhone;
+            form.company.description = state.job.company.description;
+        } catch (error) {
+            console.error('Error fetching job',error);
+        }finally{
+            state.isLoading = false;
+        }
+    })
+</script>
+
+
+<template>
     <section class="bg-green-50">
       <div class="container m-auto max-w-2xl py-24">
         <div
           class="bg-white px-6 py-8 mb-4 shadow-md rounded-md border m-4 md:m-0"
         >
-          <form>
-            <h2 class="text-3xl text-center font-semibold mb-6">Add Job</h2>
+          <form @submit.prevent="handleSubmit">
+            <h2 class="text-3xl text-center font-semibold mb-6">Edit Job</h2>
 
             <div class="mb-4">
               <label for="type" class="block text-gray-700 font-bold mb-2"
                 >Job Type</label
               >
               <select
+                v-model="form.type"
                 id="type"
                 name="type"
                 class="border rounded w-full py-2 px-3"
@@ -82,6 +111,7 @@
                 >Job Listing Name</label
               >
               <input
+                v-model="form.title"
                 type="text"
                 id="name"
                 name="name"
@@ -97,6 +127,7 @@
                 >Description</label
               >
               <textarea
+                v-model="form.description"
                 id="description"
                 name="description"
                 class="border rounded w-full py-2 px-3"
@@ -110,6 +141,7 @@
                 >Salary</label
               >
               <select
+                v-model="form.salary"
                 id="salary"
                 name="salary"
                 class="border rounded w-full py-2 px-3"
@@ -134,6 +166,7 @@
                 Location
               </label>
               <input
+                v-model="form.location"
                 type="text"
                 id="location"
                 name="location"
@@ -150,6 +183,7 @@
                 >Company Name</label
               >
               <input
+                v-model="form.company.name"
                 type="text"
                 id="company"
                 name="company"
@@ -165,6 +199,7 @@
                 >Company Description</label
               >
               <textarea
+                v-model="form.company.description"
                 id="company_description"
                 name="company_description"
                 class="border rounded w-full py-2 px-3"
@@ -180,6 +215,7 @@
                 >Contact Email</label
               >
               <input
+                v-model="form.company.contactEmail"
                 type="email"
                 id="contact_email"
                 name="contact_email"
@@ -195,6 +231,7 @@
                 >Contact Phone</label
               >
               <input
+                v-model="form.company.contactPhone"
                 type="tel"
                 id="contact_phone"
                 name="contact_phone"
@@ -208,14 +245,11 @@
                 class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline"
                 type="submit"
               >
-                Add Job
+                Update Job
               </button>
             </div>
           </form>
         </div>
       </div>
     </section>
-
-    <script src="js/main.js"></script>
-  </body>
-</html>
+</template>
